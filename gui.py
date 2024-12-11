@@ -40,10 +40,6 @@ class RoutingSimulatorApp:
         tk.Button(self.control_frame, text="Add Link", command=self.add_link).pack(side=tk.LEFT, padx=10)
         tk.Button(self.control_frame, text="Reset", command=self.reset).pack(side=tk.LEFT, padx=10)
 
-        self.zoom_scale = tk.Scale(self.control_frame, from_=0.5, to=2.0, resolution=0.1, orient=tk.HORIZONTAL,
-                                   label="Zoom", command=self.set_zoom)
-        self.zoom_scale.set(1.0)
-        self.zoom_scale.pack(side=tk.RIGHT, padx=10)
 
         # Mouse Events
         self.canvas.bind("<Button-1>", self.on_mouse_down)
@@ -141,7 +137,7 @@ class RoutingSimulatorApp:
 
     def draw_nodes(self):
         for node, (x, y) in self.node_positions.items():
-            x, y = int(x * self.zoom_level), int(y * self.zoom_level)
+            x, y = int(x), int(y)
             self.canvas.create_oval(x - 20, y - 20, x + 20, y + 20, fill="lightblue", tags=f"node_{node.name}")
             self.canvas.create_text(x, y, text=node.name, tags=f"node_{node.name}")
 
@@ -151,12 +147,11 @@ class RoutingSimulatorApp:
          for neighbor, cost in node.neighbors.items():
              link = (node.name, neighbor.name)  # Identifica il collegamento
              if link not in drawn_links and (neighbor.name, node.name) not in drawn_links:
-                 x1, y1 = int(x1 * self.zoom_level), int(y1 * self.zoom_level)
-                 x2, y2 = int(self.node_positions[neighbor][0] * self.zoom_level), int(self.node_positions[neighbor][1] * self.zoom_level)
-                 
-                 # Calcola la larghezza della linea in base allo zoom
-                 line_width = max(1, int(2 / self.zoom_level))  # La larghezza della linea diminuisce con lo zoom
-                 
+                 x1, y1 = int(x1), int(y1)
+                 x2, y2 = int(self.node_positions[neighbor][0]), int(self.node_positions[neighbor][1])
+ 
+                 line_width = 2
+                
                  # Disegna il collegamento con la larghezza della linea variabile
                  line = self.canvas.create_line(x1, y1, x2, y2, fill="black", width=line_width)
                  self.canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, text=str(cost), fill="black")
@@ -220,15 +215,11 @@ class RoutingSimulatorApp:
 
         link_window.destroy()
 
-    def set_zoom(self, value):
-        self.zoom_level = float(value)
-        self.draw_all()
-
     def show_routing_table(self, event):
         self.routing_table_manager.update_routing_tables()
         self.draw_all()
         for node, (x, y) in self.node_positions.items():
-            if (x - 20 <= event.x / self.zoom_level <= x + 20) and (y - 20 <= event.y / self.zoom_level <= y + 20):
+            if (x - 20 <= event.x <= x + 20) and (y - 20 <= event.y <= y + 20):
                 table_window = tk.Toplevel(self.root)
                 table_window.title(f"Routing Table: {node.name}")
                 tk.Label(table_window, text=node.get_routing_table_str(), justify=tk.LEFT).pack()
@@ -237,7 +228,7 @@ class RoutingSimulatorApp:
 
     def rename_node(self, event):
         for node, (x, y) in self.node_positions.items():
-            if (x - 20 <= event.x / self.zoom_level <= x + 20) and (y - 20 <= event.y / self.zoom_level <= y + 20):
+            if (x - 20 <= event.x <= x + 20) and (y - 20 <= event.y <= y + 20):
                 new_name = simpledialog.askstring("Rename Node", "Enter new name:", initialvalue=node.name)
                 if new_name and new_name != node.name:
                     node.name = new_name
@@ -254,7 +245,7 @@ class RoutingSimulatorApp:
 
     def on_mouse_drag(self, event):
         if self.selected_node:
-            self.node_positions[self.selected_node] = (event.x / self.zoom_level, event.y / self.zoom_level)
+            self.node_positions[self.selected_node] = (event.x, event.y)
             self.draw_all()
 
     def on_mouse_up(self, event):
